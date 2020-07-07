@@ -148,10 +148,10 @@ static ros::Publisher ndt_pose_pub;
 static geometry_msgs::PoseStamped ndt_pose_msg;
 
 // current_pose is published by vel_pose_mux
-/*
+
 static ros::Publisher current_pose_pub;
 static geometry_msgs::PoseStamped current_pose_msg;
- */
+ 
 
 static ros::Publisher localizer_pose_pub;
 static geometry_msgs::PoseStamped localizer_pose_msg;
@@ -210,7 +210,7 @@ static autoware_msgs::NDTStat ndt_stat_msg;
 static double predict_pose_error = 0.0;
 
 static double _tf_x, _tf_y, _tf_z, _tf_roll, _tf_pitch, _tf_yaw;
-static Eigen::Matrix4f tf_btol;
+static Eigen::Matrix4d tf_btol;
 
 static std::string _localizer = "velodyne";
 static std::string _offset = "linear";  // linear, zero, quadratic
@@ -278,7 +278,7 @@ static void param_callback(const autoware_config_msgs::ConfigNDT::ConstPtr& inpu
   }
 
   _use_gnss = input->init_pos_gnss;
-
+  
   // Setting parameters
   if (input->resolution != ndt_res)
   {
@@ -486,7 +486,7 @@ static void map_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
       dummy_scan_ptr->push_back(dummy_point);
       new_anh_ndt.setInputSource(dummy_scan_ptr);
 
-      new_anh_ndt.align(Eigen::Matrix4f::Identity());
+      new_anh_ndt.align(Eigen::Matrix4d::Identity());
 
       pthread_mutex_lock(&mutex);
       anh_ndt = new_anh_ndt;
@@ -943,8 +943,8 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_scan_ptr(new pcl::PointCloud<pcl::PointXYZ>(filtered_scan));
     int scan_points_num = filtered_scan_ptr->size();
 
-    Eigen::Matrix4f t(Eigen::Matrix4f::Identity());   // base_link
-    Eigen::Matrix4f t2(Eigen::Matrix4f::Identity());  // localizer
+    Eigen::Matrix4d t(Eigen::Matrix4d::Identity());   // base_link
+    Eigen::Matrix4d t2(Eigen::Matrix4d::Identity());  // localizer
 
     std::chrono::time_point<std::chrono::system_clock> align_start, align_end, getFitnessScore_start,
         getFitnessScore_end;
@@ -1014,14 +1014,14 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     else
       predict_pose_for_ndt = predict_pose;
 
-    Eigen::Translation3f init_translation(predict_pose_for_ndt.x, predict_pose_for_ndt.y, predict_pose_for_ndt.z);
-    Eigen::AngleAxisf init_rotation_x(predict_pose_for_ndt.roll, Eigen::Vector3f::UnitX());
-    Eigen::AngleAxisf init_rotation_y(predict_pose_for_ndt.pitch, Eigen::Vector3f::UnitY());
-    Eigen::AngleAxisf init_rotation_z(predict_pose_for_ndt.yaw, Eigen::Vector3f::UnitZ());
-    Eigen::Matrix4f init_guess = (init_translation * init_rotation_z * init_rotation_y * init_rotation_x) * tf_btol;
+    Eigen::Translation3d init_translation(predict_pose_for_ndt.x, predict_pose_for_ndt.y, predict_pose_for_ndt.z);
+    Eigen::AngleAxisd init_rotation_x(predict_pose_for_ndt.roll, Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd init_rotation_y(predict_pose_for_ndt.pitch, Eigen::Vector3d::UnitY());
+    Eigen::AngleAxisd init_rotation_z(predict_pose_for_ndt.yaw, Eigen::Vector3d::UnitZ());
+    Eigen::Matrix4d init_guess = (init_translation * init_rotation_z * init_rotation_y * init_rotation_x) * tf_btol;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-
+   /*
     if (_method_type == MethodType::PCL_GENERIC)
     {
       align_start = std::chrono::system_clock::now();
@@ -1039,7 +1039,8 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 
       trans_probability = ndt.getTransformationProbability();
     }
-    else if (_method_type == MethodType::PCL_ANH)
+    */
+    if (_method_type == MethodType::PCL_ANH)
     {
       align_start = std::chrono::system_clock::now();
       anh_ndt.align(init_guess);
@@ -1075,6 +1076,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
       trans_probability = anh_gpu_ndt_ptr->getTransformationProbability();
     }
 #endif
+/*
 #ifdef USE_PCL_OPENMP
     else if (_method_type == MethodType::PCL_OPENMP)
     {
@@ -1094,6 +1096,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
       trans_probability = omp_ndt.getTransformationProbability();
     }
 #endif
+*/
     align_time = std::chrono::duration_cast<std::chrono::microseconds>(align_end - align_start).count() / 1000.0;
 
     t2 = t * tf_btol.inverse();
@@ -1139,7 +1142,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     {
       use_predict_pose = 1;
     }
-    use_predict_pose = 0;
+    //use_predict_pose = 0;
 
     if (use_predict_pose == 0)
     {
@@ -1316,7 +1319,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 
     current_q.setRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
     // current_pose is published by vel_pose_mux
-    /*
+    
     current_pose_msg.header.frame_id = "/map";
     current_pose_msg.header.stamp = current_scan_time;
     current_pose_msg.pose.position.x = current_pose.x;
@@ -1326,7 +1329,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     current_pose_msg.pose.orientation.y = current_q.y();
     current_pose_msg.pose.orientation.z = current_q.z();
     current_pose_msg.pose.orientation.w = current_q.w();
-    */
+    
 
     localizer_q.setRPY(localizer_pose.roll, localizer_pose.pitch, localizer_pose.yaw);
     if (_use_local_transform == true)
@@ -1360,7 +1363,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     health_checker_ptr_->CHECK_RATE("topic_rate_ndt_pose_slow", 8, 5, 1, "topic ndt_pose publish rate slow.");
     ndt_pose_pub.publish(ndt_pose_msg);
     // current_pose is published by vel_pose_mux
-    //    current_pose_pub.publish(current_pose_msg);
+        current_pose_pub.publish(current_pose_msg);
     localizer_pose_pub.publish(localizer_pose_msg);
 
     // Send TF "/base_link" to "/map"
@@ -1634,10 +1637,10 @@ int main(int argc, char** argv)
   }
 #endif
 
-  Eigen::Translation3f tl_btol(_tf_x, _tf_y, _tf_z);                 // tl: translation
-  Eigen::AngleAxisf rot_x_btol(_tf_roll, Eigen::Vector3f::UnitX());  // rot: rotation
-  Eigen::AngleAxisf rot_y_btol(_tf_pitch, Eigen::Vector3f::UnitY());
-  Eigen::AngleAxisf rot_z_btol(_tf_yaw, Eigen::Vector3f::UnitZ());
+  Eigen::Translation3d tl_btol(_tf_x, _tf_y, _tf_z);                 // tl: translation
+  Eigen::AngleAxisd rot_x_btol(_tf_roll, Eigen::Vector3d::UnitX());  // rot: rotation
+  Eigen::AngleAxisd rot_y_btol(_tf_pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd rot_z_btol(_tf_yaw, Eigen::Vector3d::UnitZ());
   tf_btol = (tl_btol * rot_z_btol * rot_y_btol * rot_x_btol).matrix();
 
   // Updated in initialpose_callback or gnss_callback
@@ -1654,7 +1657,7 @@ int main(int argc, char** argv)
   predict_pose_odom_pub = nh.advertise<geometry_msgs::PoseStamped>("/predict_pose_odom", 10);
   predict_pose_imu_odom_pub = nh.advertise<geometry_msgs::PoseStamped>("/predict_pose_imu_odom", 10);
   ndt_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/ndt_pose", 10);
-  // current_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/current_pose", 10);
+  current_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/current_pose", 10);
   localizer_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/localizer_pose", 10);
   estimate_twist_pub = nh.advertise<geometry_msgs::TwistStamped>("/estimate_twist", 10);
   estimated_vel_mps_pub = nh.advertise<std_msgs::Float32>("/estimated_vel_mps", 10);
@@ -1667,7 +1670,7 @@ int main(int argc, char** argv)
   // Subscribers
   ros::Subscriber param_sub = nh.subscribe("config/ndt", 10, param_callback);
   ros::Subscriber gnss_sub = nh.subscribe("gnss_pose", 10, gnss_callback);
-  //  ros::Subscriber map_sub = nh.subscribe("points_map", 1, map_callback);
+  ros::Subscriber map_sub = nh.subscribe("points_map", 1, map_callback);
   ros::Subscriber initialpose_sub = nh.subscribe("initialpose", 10, initialpose_callback);
   ros::Subscriber points_sub = nh.subscribe("filtered_points", _queue_size, points_callback);
   ros::Subscriber odom_sub = nh.subscribe("/vehicle/odom", _queue_size * 10, odom_callback);

@@ -78,8 +78,8 @@ static int map_loaded = 0;
 static std::chrono::time_point<std::chrono::system_clock> matching_start, matching_end;
 static double exe_time = 0.0;
 
-static ros::Publisher localizer_pose_pub, ndt_pose_pub;
-static geometry_msgs::PoseStamped localizer_pose_msg, ndt_pose_msg;
+static ros::Publisher localizer_pose_pub, ndt_pose_pub, proba_pose_pub;
+static geometry_msgs::PoseStamped localizer_pose_msg, ndt_pose_msg, proba_pose_msg;
 
 // double pose_mod(Posture *pose){
 void pose_mod(Posture *pose)
@@ -393,6 +393,7 @@ void points_callback(const sensor_msgs::PointCloud2::ConstPtr &msg)
   ndt_pose_msg.header.frame_id = "/map";
   ndt_pose_msg.header.stamp = current_scan_time;
   ndt_pose_msg.pose.position.x = global_t2(0, 3);
+  
   ndt_pose_msg.pose.position.y = global_t2(1, 3);
   ndt_pose_msg.pose.position.z = global_t2(2, 3);
   ndt_pose_msg.pose.orientation.x = ndt_q.x();
@@ -400,8 +401,24 @@ void points_callback(const sensor_msgs::PointCloud2::ConstPtr &msg)
   ndt_pose_msg.pose.orientation.z = ndt_q.z();
   ndt_pose_msg.pose.orientation.w = ndt_q.w();
 
+  proba_pose_msg.header.frame_id = "/map";
+  proba_pose_msg.header.stamp = current_scan_time;
+  proba_pose_msg.pose.position.x = 0.0;
+  
+  proba_pose_msg.pose.position.y = global_t2(1, 3);
+  proba_pose_msg.pose.position.z = global_t2(2, 3);
+  proba_pose_msg.pose.orientation.x = ndt_q.x();
+  proba_pose_msg.pose.orientation.y = ndt_q.y();
+  proba_pose_msg.pose.orientation.z = ndt_q.z();
+  proba_pose_msg.pose.orientation.w = ndt_q.w();
+
+
+
+
+
   localizer_pose_pub.publish(localizer_pose_msg);
   ndt_pose_pub.publish(ndt_pose_msg);
+  proba_pose_pub.publish(proba_pose_msg);
 
   scan_transrate(scan_points, map_points, &pose, scan_points_num);
 
@@ -545,8 +562,9 @@ int main(int argc, char *argv[])
   prev_pose2 = prev_pose;
   is_first_time = 1;
 
-  ndt_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/ndt_pose", 1000);
+  //ndt_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/ndt_pose", 1000);
   localizer_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/localizer_pose", 1000);
+  proba_pose_pub=nh.advertise<geometry_msgs::PoseStamped>("/proba_pose", 1000);
 
   ros::Subscriber map_sub = nh.subscribe("points_map", 10, map_callback);
   ros::Subscriber initialpose_sub = nh.subscribe("initialpose", 1000, initialpose_callback);

@@ -604,6 +604,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     final_num_iteration = ndt.getFinalNumIteration();
     transformation_probability = ndt.getTransformationProbability();
   }
+  /*
   else if (_method_type == MethodType::PCL_ANH)
   {
     anh_ndt.align(init_guess);
@@ -612,6 +613,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     has_converged = anh_ndt.hasConverged();
     final_num_iteration = anh_ndt.getFinalNumIteration();
   }
+  */
 #ifdef CUDA_FOUND
   else if (_method_type == MethodType::PCL_ANH_GPU)
   {
