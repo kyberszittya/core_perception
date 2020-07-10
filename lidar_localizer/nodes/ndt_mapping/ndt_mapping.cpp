@@ -46,6 +46,7 @@
 
 #include <ndt_cpu/NormalDistributionsTransform.h>
 #include <pcl/registration/ndt.h>
+#include <pcl_gen_registration/ndt.h>
 #ifdef CUDA_FOUND
 #include <ndt_gpu/NormalDistributionsTransform.h>
 #endif
@@ -102,7 +103,7 @@ static double current_velocity_imu_z = 0.0;
 
 static pcl::PointCloud<pcl::PointXYZI> map;
 
-static pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI> ndt;
+static pcl_gen::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI> ndt;
 static cpu::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI> anh_ndt;
 #ifdef CUDA_FOUND
 static gpu::GNormalDistributionsTransform anh_gpu_ndt;
@@ -134,14 +135,14 @@ static std_msgs::Bool ndt_stat_msg;
 
 static int initial_scan_loaded = 0;
 
-static Eigen::Matrix4f gnss_transform = Eigen::Matrix4f::Identity();
+//static Eigen::Matrix4f gnss_transform = Eigen::Matrix4f::Identity();
 
 static double min_scan_range = 5.0;
 static double max_scan_range = 200.0;
 static double min_add_scan_shift = 1.0;
 
 static double _tf_x, _tf_y, _tf_z, _tf_roll, _tf_pitch, _tf_yaw;
-static Eigen::Matrix4f tf_btol, tf_ltob;
+static Eigen::Matrix4d tf_btol, tf_ltob;
 
 static bool _use_imu = false;
 static bool _use_odom = false;
@@ -459,8 +460,8 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
   pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_scan_ptr(new pcl::PointCloud<pcl::PointXYZI>());
   tf::Quaternion q;
 
-  Eigen::Matrix4f t_localizer(Eigen::Matrix4f::Identity());
-  Eigen::Matrix4f t_base_link(Eigen::Matrix4f::Identity());
+  Eigen::Matrix4d t_localizer(Eigen::Matrix4d::Identity());
+  Eigen::Matrix4d t_base_link(Eigen::Matrix4d::Identity());
   static tf::TransformBroadcaster br;
   tf::Transform transform;
 
@@ -579,13 +580,13 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
   else
     guess_pose_for_ndt = guess_pose;
 
-  Eigen::AngleAxisf init_rotation_x(guess_pose_for_ndt.roll, Eigen::Vector3f::UnitX());
-  Eigen::AngleAxisf init_rotation_y(guess_pose_for_ndt.pitch, Eigen::Vector3f::UnitY());
-  Eigen::AngleAxisf init_rotation_z(guess_pose_for_ndt.yaw, Eigen::Vector3f::UnitZ());
+  Eigen::AngleAxisd init_rotation_x(guess_pose_for_ndt.roll, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd init_rotation_y(guess_pose_for_ndt.pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd init_rotation_z(guess_pose_for_ndt.yaw, Eigen::Vector3d::UnitZ());
 
-  Eigen::Translation3f init_translation(guess_pose_for_ndt.x, guess_pose_for_ndt.y, guess_pose_for_ndt.z);
+  Eigen::Translation3d init_translation(guess_pose_for_ndt.x, guess_pose_for_ndt.y, guess_pose_for_ndt.z);
 
-  Eigen::Matrix4f init_guess =
+  Eigen::Matrix4d init_guess =
       (init_translation * init_rotation_z * init_rotation_y * init_rotation_x).matrix() * tf_btol;
 
   t3_end = ros::Time::now();
@@ -604,7 +605,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     final_num_iteration = ndt.getFinalNumIteration();
     transformation_probability = ndt.getTransformationProbability();
   }
-  /*
+  
   else if (_method_type == MethodType::PCL_ANH)
   {
     anh_ndt.align(init_guess);
@@ -613,7 +614,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     has_converged = anh_ndt.hasConverged();
     final_num_iteration = anh_ndt.getFinalNumIteration();
   }
-  */
+  
 #ifdef CUDA_FOUND
   else if (_method_type == MethodType::PCL_ANH_GPU)
   {
@@ -625,6 +626,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
   }
 #endif
 #ifdef USE_PCL_OPENMP
+/*
   else if (_method_type == MethodType::PCL_OPENMP)
   {
     omp_ndt.align(*output_cloud, init_guess);
@@ -633,6 +635,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     has_converged = omp_ndt.hasConverged();
     final_num_iteration = omp_ndt.getFinalNumIteration();
   }
+ */ 
 #endif
 
   t_base_link = t_localizer * tf_ltob;
@@ -1026,10 +1029,10 @@ int main(int argc, char** argv)
   }
 #endif
 
-  Eigen::Translation3f tl_btol(_tf_x, _tf_y, _tf_z);                 // tl: translation
-  Eigen::AngleAxisf rot_x_btol(_tf_roll, Eigen::Vector3f::UnitX());  // rot: rotation
-  Eigen::AngleAxisf rot_y_btol(_tf_pitch, Eigen::Vector3f::UnitY());
-  Eigen::AngleAxisf rot_z_btol(_tf_yaw, Eigen::Vector3f::UnitZ());
+  Eigen::Translation3d tl_btol(_tf_x, _tf_y, _tf_z);                 // tl: translation
+  Eigen::AngleAxisd rot_x_btol(_tf_roll, Eigen::Vector3d::UnitX());  // rot: rotation
+  Eigen::AngleAxisd rot_y_btol(_tf_pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd rot_z_btol(_tf_yaw, Eigen::Vector3d::UnitZ());
   tf_btol = (tl_btol * rot_z_btol * rot_y_btol * rot_x_btol).matrix();
   tf_ltob = tf_btol.inverse();
 

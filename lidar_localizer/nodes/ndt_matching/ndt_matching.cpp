@@ -55,6 +55,8 @@
 
 #include <ndt_cpu/NormalDistributionsTransform.h>
 #include <pcl/registration/ndt.h>
+#include <pcl_gen_registration/ndt.h>
+
 #ifdef CUDA_FOUND
 #include <ndt_gpu/NormalDistributionsTransform.h>
 #endif
@@ -116,7 +118,7 @@ static int map_loaded = 0;
 static int _use_gnss = 1;
 static int init_pos_set = 0;
 
-static pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
+static pcl_gen::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
 static cpu::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> anh_ndt;
 #ifdef CUDA_FOUND
 static std::shared_ptr<gpu::GNormalDistributionsTransform> anh_gpu_ndt_ptr =
@@ -458,7 +460,7 @@ static void map_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     // Setting point cloud to be aligned to.
     if (_method_type == MethodType::PCL_GENERIC)
     {
-      pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> new_ndt;
+      pcl_gen::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> new_ndt;
       pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud(new pcl::PointCloud<pcl::PointXYZ>);
       new_ndt.setResolution(ndt_res);
       new_ndt.setInputTarget(map_ptr);
@@ -466,7 +468,7 @@ static void map_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
       new_ndt.setStepSize(step_size);
       new_ndt.setTransformationEpsilon(trans_eps);
 
-      new_ndt.align(*output_cloud, Eigen::Matrix4f::Identity());
+      new_ndt.align(*output_cloud, Eigen::Matrix4d::Identity());
 
       pthread_mutex_lock(&mutex);
       ndt = new_ndt;
@@ -1021,7 +1023,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     Eigen::Matrix4d init_guess = (init_translation * init_rotation_z * init_rotation_y * init_rotation_x) * tf_btol;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-   /*
+   
     if (_method_type == MethodType::PCL_GENERIC)
     {
       align_start = std::chrono::system_clock::now();
@@ -1039,7 +1041,7 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 
       trans_probability = ndt.getTransformationProbability();
     }
-    */
+    
     if (_method_type == MethodType::PCL_ANH)
     {
       align_start = std::chrono::system_clock::now();
