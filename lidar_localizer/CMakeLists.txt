@@ -46,6 +46,7 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         pcl_conversions
         velodyne_pointcloud
+        pcl_gen_registration
         ndt_tku
         ndt_cpu
         autoware_health_checker
@@ -68,6 +69,7 @@ catkin_package(
         ndt_tku
         ndt_cpu
         jsk_rviz_plugins
+        pcl_gen_registration
         ${PCL_OPENMP_PACKAGES}
         DEPENDS PCL
 )
